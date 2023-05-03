@@ -1,41 +1,72 @@
-terraform {
-  required_version = ">= 0.11.1"
+variable "prefix" {
+  default = "tfvmex"
 }
 
-variable "location" {
-  description = "Azure location in which to create resources"
-  default = "East US"
+resource "azurerm_resource_group" "example" {
+  name     = "${var.prefix}-resources"
+  location = "West Europe"
 }
 
-variable "windows_dns_prefix" {
-  description = "DNS prefix to add to to public IP address for Windows VM"
+resource "azurerm_virtual_network" "main" {
+  name                = "${var.prefix}-network"
+  address_space       = ["10.0.0.0/16"]
+  location            = azurerm_resource_group.example.location
+  resource_group_name = azurerm_resource_group.example.name
 }
 
-variable "admin_password" {
-  description = "admin password for Windows VM"
-  default = "pTFE1234!"
+resource "azurerm_subnet" "internal" {
+  name                 = "internal"
+  resource_group_name  = azurerm_resource_group.example.name
+  virtual_network_name = azurerm_virtual_network.main.name
+  address_prefixes     = ["10.0.2.0/24"]
 }
 
-module "windowsserver" {
-  source              = "Azure/compute/azurerm"
-  version             = "1.1.5"
-  location            = "${var.location}"
-  resource_group_name = "${var.windows_dns_prefix}-rc"
-  vm_hostname         = "pwc-ptfe"
-  admin_password      = "${var.admin_password}"
-  vm_os_simple        = "WindowsServer"
-  public_ip_dns       = ["${var.windows_dns_prefix}"]
-  vnet_subnet_id      = "${module.network.vnet_subnets[0]}"
+resource "azurerm_network_interface" "main" {
+  name                = "${var.prefix}-nic"
+  location            = azurerm_resource_group.example.location
+  resource_group_name = azurerm_resource_group.example.name
+
+  ip_configuration {
+    name                          = "testconfiguration1"
+    subnet_id                     = azurerm_subnet.internal.id
+    private_ip_address_allocation = "Dynamic"
+  }
 }
 
-module "network" {
-  source              = "Azure/network/azurerm"
-  version             = "1.1.1"
-  location            = "${var.location}"
-  resource_group_name = "${var.windows_dns_prefix}-rc"
-  allow_ssh_traffic   = true
-}
+resource "azurerm_virtual_machine" "main" {
+  name                  = "${var.prefix}-vm"
+  location              = azurerm_resource_group.example.location
+  resource_group_name   = azurerm_resource_group.example.name
+  network_interface_ids = [azurerm_network_interface.main.id]
+  vm_size               = "Standard_DS1_v2"
 
-output "windows_vm_public_name"{
-  value = "${module.windowsserver.public_ip_dns_name}"
+  # Uncomment this line to delete the OS disk automatically when deleting the VM
+  # delete_os_disk_on_termination = true
+
+  # Uncomment this line to delete the data disks automatically when deleting the VM
+  # delete_data_disks_on_termination = true
+
+  storage_image_reference {
+    publisher = "Canonical"
+    offer     = "UbuntuServer"
+    sku       = "16.04-LTS"
+    version   = "latest"
+  }
+  storage_os_disk {
+    name              = "myosdisk1"
+    caching           = "ReadWrite"
+    create_option     = "FromImage"
+    managed_disk_type = "Standard_LRS"
+  }
+  os_profile {
+    computer_name  = "hostname"
+    admin_username = "testadmin"
+    admin_password = "Password1234!"
+  }
+  os_profile_linux_config {
+    disable_password_authentication = false
+  }
+  tags = {
+    environment = "staging"
+  }
 }
