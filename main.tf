@@ -6,7 +6,7 @@ variable "prefix" {
   default = "tfvmex"
 }
 
-variable "count" {
+variable "instances" {
   default = 1
 }
 
@@ -44,7 +44,7 @@ resource "azurerm_network_interface" "main" {
 }
 
 resource "azurerm_virtual_machine" "main" {
-  count                 = var.count  
+  count                 = var.instances  
   name                  = "${var.prefix}-vm"
   location              = azurerm_resource_group.example.location
   resource_group_name   = azurerm_resource_group.example.name
