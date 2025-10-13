@@ -6,9 +6,8 @@ variable "prefix" {
   default = "tfvmex"
 }
 
-resource "azurerm_resource_group" "example" {
-  name     = "${var.prefix}-resources"
-  location = "West Europe"
+data "azurerm_resource_group" "example" {
+  name     = var.resource_group_name
 }
 
 resource "azurerm_virtual_network" "main" {
@@ -38,6 +37,7 @@ resource "azurerm_network_interface" "main" {
 }
 
 resource "azurerm_virtual_machine" "main" {
+  count                 = var.count  
   name                  = "${var.prefix}-vm"
   location              = azurerm_resource_group.example.location
   resource_group_name   = azurerm_resource_group.example.name
