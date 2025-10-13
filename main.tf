@@ -6,6 +6,13 @@ variable "prefix" {
   default = "tfvmex"
 }
 
+variable "count" {
+  default = 1
+}
+
+variable "resource_group_name" {
+}
+
 data "azurerm_resource_group" "example" {
   name     = var.resource_group_name
 }
