@@ -10,6 +10,10 @@ variable "instances" {
   default = 1
 }
 
+variable "create_blob_storage" {
+  default = 0
+}
+
 variable "resource_group_name" {
 }
 
@@ -80,4 +84,28 @@ resource "azurerm_virtual_machine" "main" {
   tags = {
     environment = "staging"
   }
+}
+
+resource "azurerm_storage_account" "example" {
+  count                    = var.create_blob_storage ? 1 : 0
+  name                     = "${var.prefix}-examplestoracc"
+  resource_group_name      = data.azurerm_resource_group.example.name
+  location                 = data.azurerm_resource_group.example.location
+  account_tier             = "Standard"
+  account_replication_type = "LRS"
+}
+
+resource "azurerm_storage_container" "example" {
+  count                 = var.create_blob_storage ? 1 : 0
+  name                  = "${var.prefix}-content"
+  storage_account_id    = azurerm_storage_account.example.id
+  container_access_type = "private"
+}
+
+resource "azurerm_storage_blob" "example" {
+  count                  = var.create_blob_storage ? 1 : 0
+  name                   = "${var.prefix}-blob"
+  storage_account_name   = azurerm_storage_account.example.name
+  storage_container_name = azurerm_storage_container.example.name
+
 }
