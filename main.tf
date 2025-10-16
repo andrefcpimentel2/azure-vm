@@ -98,14 +98,14 @@ resource "azurerm_storage_account" "example" {
 resource "azurerm_storage_container" "example" {
   count                 = var.create_blob_storage ? 1 : 0
   name                  = "${var.prefix}-content"
-  storage_account_id    = azurerm_storage_account.example.id
+  storage_account_id    = azurerm_storage_account.example[count.index].id
   container_access_type = "private"
 }
 
 resource "azurerm_storage_blob" "example" {
   count                  = var.create_blob_storage ? 1 : 0
   name                   = "${var.prefix}-blob"
-  storage_account_name   = azurerm_storage_account.example.name
-  storage_container_name = azurerm_storage_container.example.name
+  storage_account_name   = azurerm_storage_account.example[count.index].name
+  storage_container_name = azurerm_storage_container.example[count.index].name
 
 }
