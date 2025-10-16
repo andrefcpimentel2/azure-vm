@@ -107,5 +107,5 @@ resource "azurerm_storage_blob" "example" {
   name                   = "${var.prefix}-blob"
   storage_account_name   = azurerm_storage_account.example[count.index].name
   storage_container_name = azurerm_storage_container.example[count.index].name
-
+  type                   = "Block"
 }
